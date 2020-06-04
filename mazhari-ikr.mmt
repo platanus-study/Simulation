@@ -1,0 +1,124 @@
+[[model]]
+author: 
+name: mazhari-ikr
+
+
+# Initial values
+ikr.C0 = 1
+ikr.C1 = 0
+ikr.C2 = 0
+ikr.i_kr = 0
+ikr.O_kr = 0
+
+
+#
+# Simulation engine variables
+#
+[engine]
+time = 0 bind time
+pace = 0 bind pace
+
+#
+# Membrane potential
+#
+[membrane]
+V = engine.pace
+    desc: membrane potential
+    in [mV]
+
+[nernst]
+EK = -88.3575 [mV]
+
+#
+# Model
+#
+[ikr]
+use membrane.V
+
+IKr = g * O_kr * (V - nernst.EK)
+
+alpha = p1*exp(p2*V)
+beta =  p3*exp(-p4*V)
+alpha1 = p5
+beta1 =  p6 
+alpha2 = p7*exp(p8*V) 
+beta2 = p9*exp(-p10*V) 
+alphai =p11*exp(p12*V) 
+betai =  p13*exp(-p14*V) 
+alphac2ToI = p15*exp(p16*V) 
+betaItoC2 =  (beta2 * betai * alphac2ToI)/(alpha2 * alphai)  
+
+dot(c0) = c1 * beta - c0 * alpha
+dot(c1) = c0 * alpha + c2*beta1 - c1*(beta+alpha1)
+dot(c2) = c1 * alpha1 + O_kr*beta2 + i_kr*betaItoC2 - c2 * (beta1 + alpha2 + alphac2ToI)
+dot(O_kr) = c2 * alpha2 + i_kr*betai - O_kr*(beta2+alphai)
+dot(i_kr) = c2*alphac2ToI + O_kr*alphai - i_kr*(betaItoC2 + betai)
+
+
+p1=0.0069 [1/ms]
+p2=0.0272 [1/mV]
+p3=0.0227 [1/ms]
+p4=-0.0431 [1/mV]
+p5=0.0266  
+p6=0.1348
+p7=0.0218 [1/ms]
+p8=0.0262 [1/mV] 
+p9= 0.0009 [1/ms]
+p10=-0.0269 [1/mV]
+p11=0.0622 [1/ms]
+p12=0.0120 [1/mV]
+p13=0.0059 [1/ms]
+p14=-0.0443 [1/mV]
+p15=1.29e-5 [1/ms]
+p16=2.71e-6  [uS]
+g= p16
+
+
+[[script]]
+import myokit
+import myokit.pacing as pacing
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as pl
+
+#
+# Simple IKr test script
+#
+
+# Get model
+m = get_model()
+
+# Create pacing protocol
+v = np.arange(-100, 50 + 10, 10)
+p = pacing.steptrain(
+        vsteps=v,
+        vhold=-80,
+        tpre=2000,
+        tstep=5000,
+        tpost=3000)
+
+d = [
+    'engine.time',
+    'membrane.V',
+    'ikr.IKr',
+    ]
+
+# Run simulation
+s = myokit.Simulation(m, p)
+d = s.run(p.characteristic_time(), log=d)
+
+# Create colormap for plotting
+cmap = matplotlib.cm.get_cmap('viridis')
+norm = matplotlib.colors.Normalize(0, len(v))
+
+# Plot data as overlapping steps
+d2 = d.npview()
+d2 = d2.regularize(0.1)
+d2 = d2.fold(10000)
+pl.figure()
+for k in xrange(len(v)):
+    pl.subplot(2,1,1)
+    pl.plot(d2.time(), d2['membrane.V', k], color=cmap(norm(k)))
+    pl.subplot(2,1,2)
+    pl.plot(d2.time(), d2['ikr.IKr', k], color=cmap(norm(k)))
+pl.show()
