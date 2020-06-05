@@ -49,10 +49,10 @@ class Boundaries(pints.Boundaries):
             self.upper_conductance = 10 * lower_conductance
 
         # Limits on p1-p24
-        self.lower_alpha = 1e-8             # Kylie: 1e-7
+        self.lower_alpha = 1e-7             # Kylie: 1e-7
         self.upper_alpha = 1e3              # Kylie: 1e3
-        self.lower_beta = 1e-8              # Kylie: 1e-7
-        self.upper_beta = 3e-1               # Kylie: 0.4
+        self.lower_beta = 1e-7              # Kylie: 1e-7
+        self.upper_beta = 4e-1               # Kylie: 0.4
 
         # Lower and upper bounds for all parameters
         self.lower = [
@@ -116,7 +116,7 @@ class Boundaries(pints.Boundaries):
         self.upper = np.array(self.upper)
 
         # Limits on maximum reaction rates
-        self.rmin = 1.67e-8
+        self.rmin = 1.67e-5
         self.rmax = 1000
 
         # Voltages used to calculate maximum rates
